@@ -113,37 +113,23 @@ int rmd160_4(size_t length, const unsigned char *data0, const unsigned char *dat
     return 0; // Success
 }
 
-bool sha256_file(const char* file_name, uint8_t* digest) {
-    FILE* file = fopen(file_name, "rb");
-    if (file == NULL) {
-        printf("Failed to open file: %s\n", file_name);
-        return false;
+int hash160(const unsigned char *data, size_t length, unsigned char *digest) {
+    unsigned char sha[32];
+    if (sha256(data, length, sha)) {
+        return 1;
     }
-    
-    uint8_t buffer[8192]; // Buffer to read file contents
-    size_t bytes_read;
-    
-    SHA256_CTX ctx;
-    if (SHA256_Init(&ctx) != 1) {
-        printf("Failed to initialize SHA256 context\n");
-        fclose(file);
-        return false;
+    return rmd160(sha, 32, digest);
+}
+
+int hash160_4(size_t length, const unsigned char *data0, const unsigned char *data1,
+               const unsigned char *data2, const unsigned char *data3,
+               unsigned char *digest0, unsigned char *digest1,
+               unsigned char *digest2, unsigned char *digest3) {
+    unsigned char sha[4][32];
+    if (sha256_4(length, data0, data1, data2, data3,
+                  sha[0], sha[1], sha[2], sha[3])) {
+        return 1;
     }
-    
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
-        if (SHA256_Update(&ctx, buffer, bytes_read) != 1) {
-            printf("Failed to update digest\n");
-            fclose(file);
-            return false;
-        }
-    }
-    
-    if (SHA256_Final(digest, &ctx) != 1) {
-        printf("Failed to finalize digest\n");
-        fclose(file);
-        return false;
-    }
-    
-    fclose(file);
-    return true;
+    return rmd160_4(32, sha[0], sha[1], sha[2], sha[3],
+                    digest0, digest1, digest2, digest3);
 }
